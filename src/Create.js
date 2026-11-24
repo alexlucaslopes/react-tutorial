@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useHistory } from "react-router-dom";
+import supabase from "./config/supabaseClient";
 
 const Create = () => {
     const [ title, setTitle ] = useState('');
@@ -8,22 +9,24 @@ const Create = () => {
     const [isPending, setIsPending] = useState(false);
     const history = useHistory();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const blog = { title, body, author };
 
-        setIsPending(true);  
+        setIsPending(true);
 
-        fetch('http://localhost:8000/blogs', {
-            method: 'POST',
-            headers: {'Content-Type' : 'application/json'},
-            body: JSON.stringify(blog)
-        }).then(() => {
+        const { error } = await supabase
+            .from('blogs')
+            .insert([blog]);
+
+        if (error) {
+            console.log(error);
+            setIsPending(false);
+        } else {
             console.log('new blog added');
             setIsPending(false);
-            //history.go(1);
             history.push('/');
-        });      
+        }
     }
 
     return ( 

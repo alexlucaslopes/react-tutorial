@@ -1,27 +1,54 @@
-import { useParams } from "react-router-dom"; 
-import useFetch from "./useFetch";
-import { useHistory } from "react-router-dom/cjs/react-router-dom.min";
+import { useParams, useHistory } from "react-router-dom";
+import { useState, useEffect } from "react";
+import supabase from "./config/supabaseClient";
 
 const BlogDetails = () => {
     const { id } = useParams();
-    const { data: blog, error, isPending } = useFetch('http://localhost:8000/blogs/' + id);
     const history = useHistory();
+    const [blog, setBlog] = useState(null);
+    const [fetchError, setFetchError] = useState(null);
 
-    const handleClick = () => {
-        fetch('http://localhost:8000/blogs/' + blog.id, {
-            method: 'DELETE'
-        }).then(() => {
+    useEffect(() => {
+        const fetchBlog = async () => {
+            const { data, error } = await supabase
+                .from('blogs')
+                .select()
+                .eq('id', id)
+                .single();
+
+            if (error) {
+                setFetchError('Could not fetch that blog');
+                setBlog(null);
+                console.log(error);
+            }
+            if (data) {
+                setBlog(data);
+                setFetchError(null);
+            }
+        }
+
+        fetchBlog();
+    }, [id]);
+
+    const handleClick = async () => {
+        const { error } = await supabase
+            .from('blogs')
+            .delete()
+            .eq('id', blog.id);
+
+        if (error) {
+            console.log(error);
+        } else {
             history.push('/');
-        });
+        }
     }
 
-    return (  
+    return (
         <div className="blog-details">
-            { isPending && <div>Loading...</div> }
-            { error && <div>{ error }</div> }
+            { fetchError && (<p>{ fetchError }</p>) }
             { blog && (
                 <article>
-                    <h2>{ blog.title }</h2> 
+                    <h2>{ blog.title }</h2>
                     <p>Written by { blog.author }</p>
                     <div>{ blog.body }</div>
                     <button onClick={handleClick}>delete</button>
@@ -30,5 +57,5 @@ const BlogDetails = () => {
         </div>
     );
 }
- 
+
 export default BlogDetails;

@@ -1,16 +1,39 @@
+import { useState, useEffect } from "react";
 import BlogList from "./BlogList";
-import useFetch from "./useFetch";
+import supabase from "./config/supabaseClient";
 
-const Home = () => {    
-    const { data: blogs, isPending, error } = useFetch('http://localhost:8000/blogs')
+const Home = () => {
+    const [fetchError, setFetchError] = useState(null);
+    const [blogs, setBlogs] = useState(null);
 
-    return (  
+    useEffect(() => {
+        const fetchBlogs = async () => {
+            const { data, error } = await supabase
+                .from('blogs')
+                .select();
+
+            if (error) {
+                setFetchError('Could not fetch the blogs');
+                setBlogs(null);
+                console.log(error);
+            }
+            if (data) {
+                setBlogs(data);
+                setFetchError(null);
+            }
+        }
+
+        fetchBlogs();
+    }, []);
+
+    return (
         <div className="home">
-            { error && <div>{ error }</div> }
-            { isPending && <div>Loading...</div>}
-            { blogs && <BlogList blogs={blogs} title="All Blogs!" /> }
+            { fetchError && (<p>{ fetchError }</p>) }
+            { blogs && (
+                <BlogList blogs={blogs} title="All Blogs!" />
+            )}
         </div>
     );
 }
- 
+
 export default Home;
